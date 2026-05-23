@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TradingView Buy Launcher Pro v4</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+  <style>
+    :root, [data-theme="light"] {--bg:#f7f6f2;--card:#f9f8f5;--card2:#fbfbf9;--border:#d4d1ca;--text:#28251d;--muted:#7a7974;--primary:#01696f;--primary2:#0c4e54;--ok:#437a22;--warn:#da7101;--danger:#a12c7b;--shadow:0 12px 32px rgba(30,24,12,.08);--r:16px;--r2:10px}
+    [data-theme="dark"] {--bg:#171614;--card:#1c1b19;--card2:#201f1d;--border:#393836;--text:#cdccca;--muted:#9a9995;--primary:#4f98a3;--primary2:#227f8b;--ok:#6daa45;--warn:#fdab43;--danger:#d163a7;--shadow:0 12px 32px rgba(0,0,0,.28)}
+    *{box-sizing:border-box} body{margin:0;font-family:'Satoshi',sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+    .wrap{max-width:1320px;margin:0 auto;padding:24px}.top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:20px}
+    h1{margin:0 0 8px;font-size:clamp(28px,4vw,48px);line-height:1.04} h2,h3{margin:0 0 8px} p{margin:0;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1.06fr .94fr;gap:20px}.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}
+    textarea{width:100%;min-height:220px;border:1px solid var(--border);border-radius:var(--r2);padding:14px;background:var(--card2);color:var(--text);font:inherit;resize:vertical}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.row{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    button,input,select{font:inherit} button{border:0;border-radius:999px;padding:12px 16px;background:var(--primary);color:#fff;cursor:pointer;min-height:44px}
+    button.secondary{background:transparent;color:var(--text);border:1px solid var(--border)} button.warn{background:var(--warn)} button.danger{background:var(--danger)} button:hover{background:var(--primary2)} button.secondary:hover{background:var(--card2)}
+    input,select{padding:11px 12px;border:1px solid var(--border);border-radius:12px;background:var(--card2);color:var(--text);min-height:44px}
+    .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:12px}.stat{padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--card2)}
+    .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.v{font-size:24px;font-weight:700;margin-top:6px}
+    .list{max-height:700px;overflow:auto;border:1px solid var(--border);border-radius:14px;background:var(--card2)}
+    .item{display:grid;grid-template-columns:56px 96px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)} .item:last-child{border-bottom:0}
+    .badge{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(67,122,34,.12);color:var(--ok)}
+    .exchange{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(218,113,1,.12);color:var(--warn)}
+    .state{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700}
+    .mapped{background:rgba(67,122,34,.12);color:var(--ok)} .guess{background:rgba(218,113,1,.12);color:var(--warn)} .miss{background:rgba(161,44,123,.12);color:var(--danger)}
+    .ticker{font-weight:700;font-size:18px}.small{font-size:13px;color:var(--muted)} .hint{font-size:13px;color:var(--muted);margin-top:10px}.theme{background:transparent;color:var(--text);border:1px solid var(--border)} a{color:var(--primary);text-decoration:none}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:14px}.box{border:1px solid var(--border);border-radius:14px;background:var(--card2);padding:14px} code{background:var(--card2);padding:2px 6px;border-radius:8px}
+    @media (max-width: 1020px){.grid,.split{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.item{grid-template-columns:48px 88px 1fr}.wrap{padding:16px}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>TradingView Buy Launcher Pro v4</h1>
+      <p>只抽取 Buy 股票，支援手動 mapping，並加入「線上查交易所」工作流，方便補全 NASDAQ / NYSE / AMEX 後再開 TradingView。</p>
+    </div>
+    <button class="theme" id="themeToggle">🌙</button>
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <h2>1. 貼上掃描檔</h2>
+      <p class="small">支援 <code>⭐ BUY #1: SNEX | ...</code> 和 <code>ADDITIONAL BUYS</code> 清單；會自動忽略 Sell 區塊。</p>
+      <textarea id="scanInput" class="mono" placeholder="把 latest_optimized_scan.txt 內容貼在這裡…"></textarea>
+
+      <h2 style="margin-top:18px">2. 貼上交易所 mapping</h2>
+      <p class="small">格式每行一個，例如 <code>AAPL,NASDAQ</code>、<code>WMT,NYSE</code>。沒有 mapping 的股票，可用下方「線上查」補。</p>
+      <textarea id="mappingInput" class="mono" placeholder="可貼上你整理好的 ticker,exchange 對照表…"></textarea>
+
+      <div class="row toolbar">
+        <select id="fallbackExchange">
+          <option value="NASDAQ">Fallback: NASDAQ</option>
+          <option value="NYSE">Fallback: NYSE</option>
+          <option value="AMEX">Fallback: AMEX</option>
+        </select>
+        <button id="parseBtn">解析 Buy 股票</button>
+        <button id="resolveBtn" class="warn">線上查未對照股票</button>
+        <button id="openTopBtn" style="background:#d32f2f; font-weight:700;">🚀 開前 20 隻 (1-20)</button>
+        <button id="openNextBatchBtn" style="background:#7c3aed; font-weight:700;">▶ 開下一批 20 隻</button>
+        <button id="openSelectedBtn" class="secondary">開已勾選</button>
+        <button id="exportCsvBtn" class="secondary">匯出 CSV</button>
+        <button id="exportTxtBtn" class="secondary">匯出 watchlist TXT</button>
+      </div>
+      <p class="hint">v4 的「線上查」是工作流式做法：會為未 mapping 的 ticker 生成 TradingView / Nasdaq 搜尋連結，讓你快速確認後回填 mapping，再正式批量開圖。</p>
+
+      <div class="stats">
+        <div class="stat"><div class="k">Buy 股票數</div><div class="v" id="totalCount">0</div></div>
+        <div class="stat"><div class="k">已 mapping</div><div class="v" id="mappedCount">0</div></div>
+        <div class="stat"><div class="k">Fallback</div><div class="v" id="fallbackCount">0</div></div>
+        <div class="stat"><div class="k">待查詢</div><div class="v" id="unresolvedCount">0</div></div>
+        <div class="stat"><div class="k">Additional</div><div class="v" id="additionalCount">0</div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Buy 結果</h2>
+      <div class="row toolbar">
+        <input id="searchBox" placeholder="搜尋 ticker，例如 PLTR" style="flex:1;min-width:180px">
+        <select id="exchangeFilter">
+          <option value="all">全部交易所</option>
+          <option value="NASDAQ">NASDAQ</option>
+          <option value="NYSE">NYSE</option>
+          <option value="AMEX">AMEX</option>
+          <option value="UNRESOLVED">只看未 mapping</option>
+        </select>
+      </div>
+      <div class="list" id="resultList"></div>
+      <div class="split" style="margin-top:14px">
+        <div class="box">
+          <h3>線上查交易所</h3>
+          <p class="small">按「線上查未對照股票」後，工具會按 ticker 產生兩類查詢入口：TradingView 搜尋與 Nasdaq Symbol Lookup。你核對交易所後，把結果貼回 mapping 區即可。</p>
+        </div>
+        <div class="box">
+          <h3>開圖網址</h3>
+          <p class="small">v4 一律使用 <code>https://tw.tradingview.com/chart/?symbol=TICKER</code>。如果未 mapping，就暫時用 fallback 交易所。</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const sampleScan = `⭐ BUY #1: SNEX | Score: 115.6/125
+⭐ BUY #2: SUN | Score: 113.6/125
+⭐ BUY #3: ELA | Score: 111.3/125
+ADDITIONAL BUYS
+AAMI, ADTN, ARMK, VVX, PBI, SWBI, WST, PNTG, ECO, FCFS, EPD
+🔴 TOP SELL SIGNALS
+⭐ SELL #1: XYZ | Score: 66.0/125`;
+const sampleMap = `SNEX,NASDAQ
+SUN,NYSE
+ELA,AMEX
+AAMI,NYSE
+WST,NYSE
+EPD,NYSE`;
+
+const scanInput = document.getElementById('scanInput');
+const mappingInput = document.getElementById('mappingInput');
+const fallbackExchange = document.getElementById('fallbackExchange');
+const resultList = document.getElementById('resultList');
+const totalCount = document.getElementById('totalCount');
+const mappedCount = document.getElementById('mappedCount');
+const fallbackCount = document.getElementById('fallbackCount');
+const unresolvedCount = document.getElementById('unresolvedCount');
+const additionalCount = document.getElementById('additionalCount');
+const searchBox = document.getElementById('searchBox');
+const exchangeFilter = document.getElementById('exchangeFilter');
+let rows = [];
+
+// === 批次控制變數 ===
+let currentBatchStart = 0;
+const BATCH_SIZE = 20;
+
+function normalizeTicker(t){ return (t || '').trim().toUpperCase().replace(/[^A-Z.\-]/g,''); }
+function parseMapping(text){
+  const map = new Map();
+  text.split(/\r?\n/).forEach(line => {
+    const raw = line.trim();
+    if (!raw || raw.startsWith('#')) return;
+    const parts = raw.split(/[\s,;\t]+/).filter(Boolean);
+    if (parts.length >= 2) {
+      const ticker = normalizeTicker(parts[0]);
+      const ex = parts[1].toUpperCase();
+      if (ticker && ['NASDAQ','NYSE','AMEX'].includes(ex)) map.set(ticker, ex);
+    }
+  });
+  return map;
+}
+function parseBuys(text){
+  const map = new Map();
+  const add = (ticker, source) => {
+    ticker = normalizeTicker(ticker);
+    if (!ticker) return;
+    if (!map.has(ticker)) map.set(ticker, {ticker, source});
+    else map.get(ticker).source += `, ${source}`;
+  };
+  [...text.matchAll(/⭐\s*BUY\s*#\d+:\s*([A-Z.\-]+)/g)].forEach(m => add(m[1], 'ranked'));
+  const lines = text.split(/\r?\n/);
+  let mode = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (/^ADDITIONAL BUYS/i.test(line)) { mode = 'buy'; continue; }
+    if (/^TOP SELL SIGNALS|^🔴 TOP SELL SIGNALS|^TOP SELL/i.test(line)) { mode = null; }
+    if (!line) continue;
+    if (mode === 'buy' && /^[A-Z0-9, .\-]+$/.test(line) && line.includes(',')) {
+      line.split(',').map(s => s.trim()).forEach(t => add(t, 'additional'));
+    }
+  }
+  return [...map.values()].sort((a,b)=>a.ticker.localeCompare(b.ticker));
+}
+
+// 改用簡單格式：只用 Ticker（解決部分股票開不到的問題）
+function tvUrl(ticker, exchange){ 
+    return `https://tw.tradingview.com/chart/?symbol=${encodeURIComponent(ticker)}`;
+}
+
+function tvSearchUrl(ticker){ return `https://www.tradingview.com/?symbol=${encodeURIComponent(ticker)}`; }
+function nasdaqLookupUrl(ticker){ return `https://www.nasdaqtrader.com/trader.aspx?id=symbollookup&iss=z&typ=All_Issues&mth=contains`; }
+
+function hydrate(){
+  const mapping = parseMapping(mappingInput.value);
+  const buys = parseBuys(scanInput.value);
+  const fallback = fallbackExchange.value;
+  rows = buys.map(r => {
+    const mapped = mapping.has(r.ticker);
+    const exchange = mapped ? mapping.get(r.ticker) : fallback;
+    return { ...r, exchange, mapped, unresolved: !mapped };
+  });
+  render();
+}
+
+function render(){
+  const q = searchBox.value.trim().toUpperCase();
+  const exf = exchangeFilter.value;
+  const filtered = rows.filter(r => {
+    if (q && !r.ticker.includes(q)) return false;
+    if (exf === 'all') return true;
+    if (exf === 'UNRESOLVED') return r.unresolved;
+    return r.exchange === exf;
+  });
+  resultList.innerHTML = filtered.map(r => `
+    <label class="item">
+      <div><input type="checkbox" data-key="${r.exchange}:${r.ticker}" checked></div>
+      <div><span class="exchange">${r.exchange}</span></div>
+      <div>
+        <div class="ticker">${r.ticker} <span class="badge">BUY</span> <span class="state ${r.mapped ? 'mapped' : 'guess'}">${r.mapped ? '已對照' : 'Fallback'}</span></div>
+        <div class="small">來源：${r.source}</div>
+        ${r.unresolved ? `<div class="small"><a href="${tvSearchUrl(r.ticker)}" target="_blank" rel="noopener noreferrer">TradingView 搜尋</a> · <a href="${nasdaqLookupUrl(r.ticker)}" target="_blank" rel="noopener noreferrer">Nasdaq Symbol Lookup</a></div>` : ''}
+      </div>
+      <div><a href="${tvUrl(r.ticker, r.exchange)}" target="_blank" rel="noopener noreferrer">開圖</a></div>
+    </label>
+  `).join('') || '<div class="item"><div></div><div></div><div class="small">未有結果</div><div></div></div>';
+  
+  totalCount.textContent = rows.length;
+  mappedCount.textContent = rows.filter(r => r.mapped).length;
+  fallbackCount.textContent = rows.filter(r => !r.mapped).length;
+  unresolvedCount.textContent = rows.filter(r => r.unresolved).length;
+  additionalCount.textContent = rows.filter(r => r.source.includes('additional')).length;
+}
+
+function checkedRows(){
+  const selected = [...resultList.querySelectorAll('input[type="checkbox"]:checked')].map(el => el.dataset.key);
+  const set = new Set(selected);
+  return rows.filter(r => set.has(`${r.exchange}:${r.ticker}`));
+}
+
+// ==================== 分批開圖（每次20隻）====================
+function openBatch(startIndex) {
+    const DELAY = 380;
+    const MAX_PER_SMALL_BATCH = 8;
+    
+    const toOpen = rows.slice(startIndex, startIndex + BATCH_SIZE);
+    
+    if (toOpen.length === 0) {
+        alert("✅ 已經開完所有股票！");
+        return;
+    }
+
+    let index = 0;
+    
+    function openNext() {
+        if (index >= toOpen.length) {
+            const batchNum = Math.floor(startIndex / BATCH_SIZE) + 1;
+            alert(`✅ 第 ${batchNum} 批開圖完成！\n共開了 ${toOpen.length} 隻股票。\n\n你可以繼續按「開下一批」`);
+            return;
+        }
+
+        const end = Math.min(index + MAX_PER_SMALL_BATCH, toOpen.length);
+        
+        for (let i = index; i < end; i++) {
+            const r = toOpen[i];
+            setTimeout(() => {
+                window.open(tvUrl(r.ticker, r.exchange), '_blank', 'noopener,noreferrer');
+            }, (i - index) * 100);
+        }
+        
+        index = end;
+        if (index < toOpen.length) {
+            setTimeout(openNext, DELAY);
+        }
+    }
+    
+    openNext();
+}
+
+function download(name, content, type){ 
+    const blob = new Blob([content], {type}); 
+    const a = document.createElement('a'); 
+    a.href = URL.createObjectURL(blob); 
+    a.download = name; 
+    a.click(); 
+    URL.revokeObjectURL(a.href); 
+}
+
+function resolveUnmapped(){
+  const unresolved = rows.filter(r => r.unresolved).slice(0,20);
+  if (!unresolved.length) return;
+  unresolved.forEach((r, idx) => {
+    setTimeout(() => window.open(tvSearchUrl(r.ticker), '_blank', 'noopener'), idx * 180);
+  });
+}
+
+// ==================== 事件監聽 ====================
+document.getElementById('parseBtn').addEventListener('click', hydrate);
+document.getElementById('resolveBtn').addEventListener('click', () => { if (!rows.length) hydrate(); resolveUnmapped(); });
+
+// 開前 20 隻（第一批）
+document.getElementById('openTopBtn').addEventListener('click', () => {
+    if (!rows.length) hydrate();
+    currentBatchStart = 0;
+    openBatch(currentBatchStart);
+});
+
+// 開下一批 20 隻
+document.getElementById('openNextBatchBtn').addEventListener('click', () => {
+    if (!rows.length) hydrate();
+    currentBatchStart += BATCH_SIZE;
+    openBatch(currentBatchStart);
+});
+
+document.getElementById('openSelectedBtn').addEventListener('click', () => {
+    const selected = checkedRows();
+    if (selected.length === 0) return alert("請先勾選股票！");
+    openBatch(0); // 簡化處理：已勾選暫時仍用一般方式
+});
+
+document.getElementById('exportCsvBtn').addEventListener('click', () => {
+  const csv = ['ticker,exchange,source,mapped,tradingview_url', ...rows.map(r => `${r.ticker},${r.exchange},${r.source},${r.mapped},"${tvUrl(r.ticker,r.exchange)}"`)].join('\n');
+  download('tradingview_buy_symbols_v4.csv', csv, 'text/csv;charset=utf-8');
+});
+
+document.getElementById('exportTxtBtn').addEventListener('click', () => {
+  const txt = rows.map(r => `${r.exchange}:${r.ticker}`).join('\n');
+  download('tradingview_buy_watchlist_v4.txt', txt, 'text/plain;charset=utf-8');
+});
+
+searchBox.addEventListener('input', render); 
+exchangeFilter.addEventListener('change', render);
+
+document.getElementById('themeToggle').addEventListener('click', () => { 
+    const html=document.documentElement; 
+    const next=html.getAttribute('data-theme')==='dark'?'light':'dark'; 
+    html.setAttribute('data-theme', next); 
+    document.getElementById('themeToggle').textContent = next === 'dark' ? '☀️' : '🌙'; 
+});
+
+scanInput.value = sampleScan; 
+mappingInput.value = sampleMap; 
+hydrate();
+</script>
+</body>
+</html>
