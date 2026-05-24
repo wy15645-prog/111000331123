@@ -43,7 +43,10 @@
   <div class="grid">
     <section class="card">
       <h2>1. 貼上掃描檔</h2>
-      <p class="small">支援 <code>⭐ BUY #1: SNEX | ...</code> 和 <code>ADDITIONAL BUYS</code> 清單；會自動忽略 Sell 區塊。</p>
+      <p class="small">
+  支援 <code>⭐ BUY #1: SNEX | ...</code> / <code>ADDITIONAL BUYS</code> 清單，
+  亦支援直接貼上 <code>STOCK SCANNER DAILY</code> 的 Snapshot（會自動抽取 SYMBOL 列），Sell 區塊會被忽略。
+</p>
       <textarea id="scanInput" class="mono" placeholder="把 latest_optimized_scan.txt 內容貼在這裡…"></textarea>
 
       <h2 style="margin-top:18px">2. 貼上交易所 mapping</h2>
@@ -150,6 +153,45 @@ function parseMapping(text){
   });
   return map;
 }
+  function parseStockScreenerSnapshot(raw) {
+  if (!raw) return [];
+
+  const lines = raw
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const symbols = [];
+
+  for (let i = 0; i < lines.length - 2; i++) {
+    const s = lines[i];
+    const next = lines[i + 1];
+    const third = lines[i + 2];
+
+    // 觀察你貼出的格式：例如
+    // JHG
+    // US
+    // Janus Henderson Group plc
+    //
+    // 所以這裡用簡單 heuristic：
+    const isAllCapsNoSpace = /^[A-Z0-9]+$/.test(s);
+    const isLikelyLength = s.length >= 1 && s.length <= 5;
+    const isMarketCode = /^[A-Z]{2,3}$/.test(next);
+    const looksLikeCompanyName = /\s/.test(third);
+
+    if (
+      isAllCapsNoSpace &&
+      isLikelyLength &&
+      isMarketCode &&
+      looksLikeCompanyName &&
+      !symbols.includes(s)
+    ) {
+      symbols.push(s);
+    }
+  }
+
+  return symbols;
+}
 function parseBuys(text){
   const map = new Map();
   const add = (ticker, source) => {
@@ -172,6 +214,30 @@ function parseBuys(text){
   }
   return [...map.values()].sort((a,b)=>a.ticker.localeCompare(b.ticker));
 }
+  function parseInput(text) {
+  const raw = text || '';
+
+  // 判斷是否 stock-screener snapshot：有這些關鍵字就當是
+  const looksLikeStockScreener =
+    /STOCK SCANNER DAILY/i.test(raw) ||
+    /Snapshot \d{4}-\d{2}-\d{2}/i.test(raw) ||
+    /TOP SCAN CANDIDATES/i.test(raw);
+
+  if (looksLikeStockScreener) {
+    const tickers = parseStockScreenerSnapshot(raw);
+    return {
+      mode: 'stock-screener',
+      tickers
+    };
+  }
+
+  // 默认走原本 v4 Buy scanner 模式
+  const buys = parseBuys(raw);
+  return {
+    mode: 'buy-v4',
+    buys
+  };
+}
 
 // 改用簡單格式：只用 Ticker（解決部分股票開不到的問題）
 function tvUrl(ticker, exchange){ 
@@ -183,13 +249,28 @@ function nasdaqLookupUrl(ticker){ return `https://www.nasdaqtrader.com/trader.as
 
 function hydrate(){
   const mapping = parseMapping(mappingInput.value);
-  const buys = parseBuys(scanInput.value);
+  const parsed = parseInput(scanInput.value);
   const fallback = fallbackExchange.value;
+
+  let buys;
+
+  if (parsed.mode === 'stock-screener') {
+    // 由 stock-screener tickers 生成 buys 結構
+    buys = parsed.tickers.map(t => ({
+      ticker: normalizeTicker(t),
+      source: 'stock-screener'
+    }));
+  } else {
+    // 原本 v4 的 BUY 模式
+    buys = parsed.buys;
+  }
+
   rows = buys.map(r => {
     const mapped = mapping.has(r.ticker);
     const exchange = mapped ? mapping.get(r.ticker) : fallback;
     return { ...r, exchange, mapped, unresolved: !mapped };
   });
+
   render();
 }
 
