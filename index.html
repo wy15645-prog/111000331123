@@ -62,6 +62,7 @@
         <button id="openNextBatchBtn" style="background:#7c3aed; font-weight:700;">▶ 開下一批 20 隻</button>
         <button id="openSelectedBtn" class="secondary">開已勾選</button>
         <button id="exportCsvBtn" class="secondary">匯出 CSV</button>
+        <button id="exportFutuBtn" style="background:#f59e0b;color:#fff;font-weight:700">匯出富途 CSV</button>
         <button id="exportTxtBtn" class="secondary">匯出 watchlist TXT</button>
       </div>
       <p class="hint">v4 的「線上查」是工作流式做法：會為未 mapping 的 ticker 生成 TradingView / Nasdaq 搜尋連結，讓你快速確認後回填 mapping，再正式批量開圖。</p>
@@ -312,6 +313,15 @@ document.getElementById('exportCsvBtn').addEventListener('click', () => {
   download('tradingview_buy_symbols_v4.csv', csv, 'text/csv;charset=utf-8');
 });
 
+document.getElementById('exportFutuBtn').addEventListener('click', () => {
+  const checked = checkedRows();
+  const target = checked.length > 0 ? checked : rows;
+  const csv = [
+    'Market,Code',
+    ...target.map(r => `US,${r.ticker}`)
+  ].join('\n');
+  download('futu_watchlist.csv', csv, 'text/csv;charset=utf-8');
+});
 document.getElementById('exportTxtBtn').addEventListener('click', () => {
   const txt = rows.map(r => `${r.exchange}:${r.ticker}`).join('\n');
   download('tradingview_buy_watchlist_v4.txt', txt, 'text/plain;charset=utf-8');
