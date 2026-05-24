@@ -153,40 +153,41 @@ function parseMapping(text){
   });
   return map;
 }
-  function parseStockScreenerSnapshot(raw) {
+function parseStockScreenerSnapshot(raw) {
   if (!raw) return [];
 
   const lines = raw
     .split(/\r?\n/)
-    .map((l) => l.trim())
+    .map(l => l.trim())
     .filter(Boolean);
 
   const symbols = [];
 
-  for (let i = 0; i < lines.length - 2; i++) {
-    const s = lines[i];
-    const next = lines[i + 1];
-    const third = lines[i + 2];
+  const isSymbolLike = (s) =>
+    /^[A-Z0-9]+$/.test(s) && s.length >= 1 && s.length <= 5;
+  const isMarketCode = (s) => /^[A-Z]{2,3}$/.test(s);
 
-    // 觀察你貼出的格式：例如
-    // JHG
-    // US
-    // Janus Henderson Group plc
-    //
-    // 所以這裡用簡單 heuristic：
-    const isAllCapsNoSpace = /^[A-Z0-9]+$/.test(s);
-    const isLikelyLength = s.length >= 1 && s.length <= 5;
-    const isMarketCode = /^[A-Z]{2,3}$/.test(next);
-    const looksLikeCompanyName = /\s/.test(third);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
 
-    if (
-      isAllCapsNoSpace &&
-      isLikelyLength &&
-      isMarketCode &&
-      looksLikeCompanyName &&
-      !symbols.includes(s)
-    ) {
-      symbols.push(s);
+    // 每個股票 block 的結尾會有一行 "Pass"
+    if (line !== 'Pass') continue;
+
+    // 從 Pass 向上最多回溯 12 行尋找最近的一個 "symbol + 市場" 組合
+    let found = null;
+
+    for (let j = i - 1; j >= 0 && j >= i - 12; j--) {
+      const s = lines[j];
+      const next = lines[j + 1] || '';
+
+      if (isSymbolLike(s) && isMarketCode(next)) {
+        found = s;
+        break;
+      }
+    }
+
+    if (found && !symbols.includes(found)) {
+      symbols.push(found);
     }
   }
 
