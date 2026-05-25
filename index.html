@@ -153,6 +153,7 @@ function parseMapping(text){
   });
   return map;
 }
+
 function parseStockScreenerSnapshot(raw) {
   if (!raw) return [];
 
@@ -199,13 +200,6 @@ function parseStockScreenerSnapshot(raw) {
   return symbols;
 }
 
-    if (found && !symbols.includes(found)) {
-      symbols.push(found);
-    }
-  }
-
-  return symbols;
-}
 function parseBuys(text){
   const map = new Map();
   const add = (ticker, source) => {
@@ -228,11 +222,11 @@ function parseBuys(text){
   }
   return [...map.values()].sort((a,b)=>a.ticker.localeCompare(b.ticker));
 }
-  function parseInput(text) {
+
+function parseInput(text) {
   const raw = text || '';
 
-  // 判斷是否 stock-screener snapshot：有這些關鍵字就當是
-const looksLikeStockScreener =
+  const looksLikeStockScreener =
     /STOCK SCANNER DAILY/i.test(raw) ||
     /Snapshot \d{4}-\d{2}-\d{2}/i.test(raw) ||
     /TOP SCAN CANDIDATES/i.test(raw) ||
