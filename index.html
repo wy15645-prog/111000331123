@@ -167,24 +167,37 @@ function parseStockScreenerSnapshot(raw) {
     /^[A-Z0-9]+$/.test(s) && s.length >= 1 && s.length <= 5;
   const isMarketCode = (s) => /^[A-Z]{2,3}$/.test(s);
 
+  // 搵晒所有 "Pass" 嘅行號
+  const passIndexes = [];
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    if (lines[i] === 'Pass') passIndexes.push(i);
+  }
 
-    // 每個股票 block 的結尾會有一行 "Pass"
-    if (line !== 'Pass') continue;
+  for (const passIdx of passIndexes) {
+    // 由 Pass 向上搵，直至撞到上一個 Pass（唔包），或檔頭
+    let startSearch = passIdx - 1;
+    while (startSearch >= 0 && lines[startSearch] !== 'Pass') {
+      startSearch--;
+    }
+    const searchFrom = startSearch + 1;
 
-    // 從 Pass 向上最多回溯 12 行尋找最近的一個 "symbol + 市場" 組合
     let found = null;
-
-    for (let j = i - 1; j >= 0 && j >= i - 12; j--) {
+    for (let j = passIdx - 1; j >= searchFrom; j--) {
       const s = lines[j];
-      const next = lines[j + 1] || '';
-
+      const next = (j + 1 < lines.length) ? lines[j + 1] : '';
       if (isSymbolLike(s) && isMarketCode(next)) {
         found = s;
         break;
       }
     }
+
+    if (found && !symbols.includes(found)) {
+      symbols.push(found);
+    }
+  }
+
+  return symbols;
+}
 
     if (found && !symbols.includes(found)) {
       symbols.push(found);
@@ -219,10 +232,12 @@ function parseBuys(text){
   const raw = text || '';
 
   // 判斷是否 stock-screener snapshot：有這些關鍵字就當是
-  const looksLikeStockScreener =
+const looksLikeStockScreener =
     /STOCK SCANNER DAILY/i.test(raw) ||
     /Snapshot \d{4}-\d{2}-\d{2}/i.test(raw) ||
-    /TOP SCAN CANDIDATES/i.test(raw);
+    /TOP SCAN CANDIDATES/i.test(raw) ||
+    // 👇 加呢行就認到你嗰種表格
+    (/\bPass\b/i.test(raw) && /\bUS\b/i.test(raw));
 
   if (looksLikeStockScreener) {
     const tickers = parseStockScreenerSnapshot(raw);
